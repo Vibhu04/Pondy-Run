@@ -1,15 +1,23 @@
 
 import cassette.audiofiles.SoundFile;
-
+import android.os.Environment;
 SoundFile sound;
+String[] score_text = new String[1];
+String dataFile;
+boolean writeable = false;
 float ground_height;
 boolean jumped = false;
 float obstacle_gap;
 int score = 0;
-int high_score = 0;
+int obstacle_index = 0;
+int high_score;
 int gameState = 1;
 PFont score_font;
 PFont pause_font;
+PImage step1;
+PImage step2;
+PImage jump;
+PImage vib_char;
 int count;
 int o_speed = 20;
 float sticks_gap;
@@ -21,9 +29,11 @@ int screen = 1;
 
 class Person {
   String name;
-  float mass, person_height, reaction_time, char_height, char_width, x, y, initY;
+  float mass, person_height, reaction_time, char_height, char_width, x, y, initY, face_height, face_x, face_y;
   float thrust = 35;
   float gravity = 2;
+  int step = 1;
+  int imgCount = 0;
   
   Person(String _name, float _mass, float _person_height, float _reaction_time) {
     name = _name;
@@ -36,10 +46,59 @@ class Person {
   }
   
   void create() {
-    fill(0);
-    rect(x,y, char_width, char_height);
-    fill(100);
-    rect(x,y+char_height/3,x/4,char_height/3);
+    //fill(0);
+    
+    //rect(x,y, char_width, char_height);
+    //fill(100);
+    //pushMatrix();
+    //translate(x+char_width/2,y);
+    //rotate(0.2);
+    ////translate(0,0);
+    //rect(0,0,x/4,char_height*0.6);
+    ////translate(-x/8,-char_height/4);
+    ////rotate(0);
+    //popMatrix();
+    
+    //pushMatrix();
+    //translate(x+char_width/2-char_height*0.6*sin(0.2),y+char_height*0.6*cos(0.2));
+    //rotate(0.2);
+    //rect(0,0,x,x/4);
+    //popMatrix();
+    ////rotate(0);
+    if(jumped == false) {
+      imgCount++;
+      if(step == 1) {
+        image(step1, x, y);
+        step1.resize(0, int(char_height));
+      } else {
+        image(step2, x, y);
+        step2.resize(0, int(char_height));
+      }
+      
+      if(imgCount % 10 == 0) {
+         if(step == 1) {
+            step = 2; 
+         } else {
+            step = 1; 
+         }
+      }
+      
+    } else {
+      image(jump, x, y);
+      jump.resize(0, int(char_height));
+    }
+    
+    if(jumped) {
+      face_y = y - char_height*0.4;
+    }
+     
+    image(vib_char, face_x, face_y);
+    vib_char.resize(0, int(face_height));
+    
+    
+    
+    
+    
   }
   
   void jump() {
@@ -52,6 +111,9 @@ class Person {
         jumped = false;
         thrust = 35;
         gravity = 2;
+        char_height /= 0.6;
+        face_x = x*1.1;
+        face_y = y - char_height*0.25;
       }
     }
     
@@ -102,11 +164,14 @@ void setup() {
   frameRate(100);
   size(displayWidth, displayHeight);
   ground_height = height/10;
-  player.char_height = height*0.25;
+  player.char_height = height*0.3;
   player.x = width/20;
   player.y = height - ground_height - player.char_height;
   player.initY = height - ground_height - player.char_height;
   player.char_width = width/10;
+  player.face_height = player.char_height * 0.4;
+  player.face_x = player.x*1.1;
+  player.face_y = player.y-player.char_height*0.25;
   obstaclesInit();
   
   sound = new SoundFile(this, "Jumping.mp3");
@@ -115,11 +180,36 @@ void setup() {
   pause_font = createFont("Helvetica-light.ttf", height*0.06);
   count = 0;
   sticks_gap = width/40;
-  
+  score_text = loadStrings("High_score.txt");
+  println(score_text[0]);
+  high_score = int(score_text[0]);
   pause.append(width/2 - sticks_gap*0.5);
   pause.append(height/20);
   pause.append(sticks_gap);
   pause.append(height/15);
+  
+  step1 = loadImage("Step1.png");
+  step2 = loadImage("Step2.png");
+  jump = loadImage("Jump.png");
+  vib_char = loadImage("Vib_char.png");
+  
+  
+  dataFile = getSdWritableFilePathOrNull("High_score.txt");
+  if (dataFile == null ){
+        String errorMsg = "There was error getting SD card path. Maybe your device doesn't have SD card mounted at the moment";
+        println(errorMsg);
+        //msgToDraw = errorMsg;
+  }
+  else{
+      
+      writeable = true;
+      println(dataFile);
+      
+      
+      
+  }
+  
+  
   
  
   
@@ -200,7 +290,8 @@ void start_game() {
 
 void obstaclesInit() {
   o_speed = 20;
-  obstacle_gap = random(width*0.33, width*0.75);
+  obstacle_index = 0;
+  obstacle_gap = random(width*0.6, width*1.5);
   obstacles.add(new Obstacle(random(100,200), random(100,150)));
   obstacles.get(0).x = width;
   obstacles.get(0).y = height - ground_height - obstacles.get(0).o_height;
@@ -229,8 +320,14 @@ void move_obstacles() {
       obstacles.get(i).move();
     }
     
-    if(i == 0) {
-       if(obstacles.get(i).x <= width/20 + width/10 && obstacles.get(i).x + obstacles.get(i).o_width >= width/20) {
+    if(i == obstacle_index) {
+       float w;
+       if(jumped) {
+         w = player.char_height;
+       } else {
+         w = player.char_height*0.375; 
+       }
+       if(obstacles.get(i).x <= player.x + w && obstacles.get(i).x + obstacles.get(i).o_width >= player.x) {
          player.checkCollision();
        } 
     }
@@ -244,7 +341,12 @@ void adjust_score() {
     if(count % 60 == 0) {
      score++; 
      if(score > high_score) {
-        high_score = score; 
+        high_score = score;
+        score_text[0] = str(high_score);
+        if(writeable) {
+          //saveStrings(dataFile, score_text);
+        }
+        
      }
      if((score + 1) % 20 == 0) {
        
@@ -255,16 +357,31 @@ void adjust_score() {
 }
 
 void adjust_obstacles() {
+  
+  
     if(width - obstacles.get(obstacles.size()-1).x > obstacle_gap) {
-      obstacles.add(new Obstacle(random(100,200), random(100,150)));
+      obstacles.add(new Obstacle(random(100,200), random(100,200)));
       obstacles.get(obstacles.size()-1).x = width;
       obstacles.get(obstacles.size()-1).y = height - ground_height - obstacles.get(obstacles.size()-1).o_height;
-      obstacle_gap = random(width*0.4, width*0.8);
+      obstacle_gap = random(width*0.6, width*1.5);
+      
+      if(obstacles.get(0).x + obstacles.get(0).o_width < 0) {
+          obstacles.remove(0); 
+          obstacle_index = 0;
+      }
+      
+      
     }
     
-    if(obstacles.size() > 0 && obstacles.get(0).x + obstacles.get(0).o_width < 0) {
-        obstacles.remove(0); 
+    if(obstacles.get(0).x + obstacles.get(0).o_width < 0) {
+           
+          obstacle_index = 1;
     }
+    
+    
+    
+    
+  
 }
 
 void add_pause() {
@@ -295,6 +412,20 @@ void show_options() {
   rectMode(CORNER);
   textAlign(LEFT);
   
+}
+
+String getSdWritableFilePathOrNull(String relativeFilename){
+   File externalDir = Environment.getExternalStorageDirectory();
+   if ( externalDir == null ){
+      return null;
+   }
+   String sketchName = this.getClass().getSimpleName();
+   //println("simple class (sketch) name is : " + sketchName );
+   File sketchSdDir = new File(externalDir, sketchName);
+   
+   File finalDir =  new File(sketchSdDir, relativeFilename);
+   return finalDir.getAbsolutePath();
+   
 }
 
 void start_afresh() {
@@ -345,10 +476,17 @@ void mousePressed() {
       if(!paused) {
         
         if(!dead) {
-        
+          
+          if(player.y >= player.initY) {
+            
             jumped = true;
             
+            player.face_x = player.x + player.char_height*0.45;
+            player.char_height *= 0.6;
             sound.play();
+          }
+        
+            
             
         } else {
           
