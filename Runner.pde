@@ -1,7 +1,49 @@
 
 import cassette.audiofiles.SoundFile;
 import android.os.Environment;
-SoundFile sound;
+
+// jumping sound effect
+SoundFile jump_sound;
+// game over sound effect
+SoundFile game_over;
+
+int players = 2; // total number of characters
+int selected = 0; // the first player is selected by default
+
+float min_oheight;
+String png = ".png";
+// all the fonts used 
+PFont score_font;
+PFont pause_font;
+PFont title_font;
+PFont attr_font;
+// images of the two steps
+PImage step1;
+PImage step2;
+// image of the jump position
+PImage jump;
+// check button image
+PImage check;
+// images for the characters while running
+PImage[] photos = new PImage[players];
+// images on display for choosing character
+PImage[] small = new PImage[players];
+// images to be shown when showing the details of character
+PImage[] big = new PImage[players];
+// counts every iteration
+int count;
+// obstacle speed
+int o_speed = 20;
+// gap between the sticks of pause button
+float sticks_gap;
+// coordinates  of pause button
+FloatList pause = new FloatList();
+boolean dead = false;
+boolean paused = false;
+// begin at the first screen
+int screen = 1;
+
+
 String[] score_text = new String[1];
 String dataFile;
 boolean writeable = false;
@@ -11,60 +53,36 @@ float obstacle_gap;
 int score = 0;
 int obstacle_index = 0;
 int high_score;
-int gameState = 1;
-PFont score_font;
-PFont pause_font;
-PImage step1;
-PImage step2;
-PImage jump;
-PImage vib_char;
-int count;
-int o_speed = 20;
-float sticks_gap;
-FloatList pause = new FloatList();
-boolean dead = false;
-boolean paused = false;
-int screen = 1;
+
+// names of characters
+String[] names = {"Vibhu", "Khushi"};
+// qualities of characters
+float[][] attributes = {{66, 183, 0.5, 35}, {56, 167, 1, 30}};
 
 
 class Person {
   String name;
   float mass, person_height, reaction_time, char_height, char_width, x, y, initY, face_height, face_x, face_y;
-  float thrust = 35;
+  float thrust;
   float gravity = 2;
   int step = 1;
+  PImage photo;
   int imgCount = 0;
   
-  Person(String _name, float _mass, float _person_height, float _reaction_time) {
-    name = _name;
-    mass = _mass;
-    person_height = _person_height;
-    reaction_time = _reaction_time;
+  Person(int index) {
     
+    
+    name = names[index];
+    mass = attributes[index][0];
+    person_height = attributes[index][1];
+    reaction_time = attributes[index][2];
+    thrust = attributes[index][3];
     
      
   }
   
   void create() {
-    //fill(0);
     
-    //rect(x,y, char_width, char_height);
-    //fill(100);
-    //pushMatrix();
-    //translate(x+char_width/2,y);
-    //rotate(0.2);
-    ////translate(0,0);
-    //rect(0,0,x/4,char_height*0.6);
-    ////translate(-x/8,-char_height/4);
-    ////rotate(0);
-    //popMatrix();
-    
-    //pushMatrix();
-    //translate(x+char_width/2-char_height*0.6*sin(0.2),y+char_height*0.6*cos(0.2));
-    //rotate(0.2);
-    //rect(0,0,x,x/4);
-    //popMatrix();
-    ////rotate(0);
     if(jumped == false) {
       imgCount++;
       if(step == 1) {
@@ -89,13 +107,10 @@ class Person {
     }
     
     if(jumped) {
-      face_y = y - char_height*0.4;
+      face_y = y - char_height*0.5;
     }
      
-    image(vib_char, face_x, face_y);
-    vib_char.resize(0, int(face_height));
-    
-    
+    image(photos[selected], face_x, face_y);
     
     
     
@@ -105,11 +120,12 @@ class Person {
     
     
     y -= thrust;
+    
     thrust -= gravity;
     if(thrust < 0) {
       if(y >= initY) {
         jumped = false;
-        thrust = 35;
+        thrust = attributes[selected][3];
         gravity = 2;
         char_height /= 0.6;
         face_x = x*1.1;
@@ -120,10 +136,12 @@ class Person {
   }
   
   void checkCollision() {
-    if(y + char_height >= obstacles.get(0).y) {
+    if(y + char_height >= obstacles.get(obstacle_index).y) {
+       
        fill(70);
        rect(displayWidth/2, displayHeight/2, 40, 40); 
        dead = true;
+       game_over.play();
        
     }
   }
@@ -153,9 +171,10 @@ class Obstacle {
   
 }
 
-Person player = new Person("Vibhu",65,183,0);
 
+//Person player = new Person(0);
 ArrayList<Obstacle> obstacles = new ArrayList<Obstacle>();
+ArrayList<Person> player = new ArrayList<Person>();
 
 
 void setup() {
@@ -164,24 +183,30 @@ void setup() {
   frameRate(100);
   size(displayWidth, displayHeight);
   ground_height = height/10;
-  player.char_height = height*0.3;
-  player.x = width/20;
-  player.y = height - ground_height - player.char_height;
-  player.initY = height - ground_height - player.char_height;
-  player.char_width = width/10;
-  player.face_height = player.char_height * 0.4;
-  player.face_x = player.x*1.1;
-  player.face_y = player.y-player.char_height*0.25;
+  
+  for(int i = 0; i < players; i++) {
+     player.add(new Person(i));
+     set_parameters(i);
+  }
+  
+  min_oheight = height - ground_height - player.get(0).y - player.get(0).char_height*0.6 + player.get(0).thrust;
+  
+  load_images();
+  
   obstaclesInit();
   
-  sound = new SoundFile(this, "Jumping.mp3");
+  jump_sound = new SoundFile(this, "Jumping.mp3");
+  game_over = new SoundFile(this, "GameOver.mp3");
   
   score_font = createFont("Helvetica.ttf", height/20);
   pause_font = createFont("Helvetica-light.ttf", height*0.06);
+  title_font = createFont("Helvetica-light.ttf", height*0.08);
+  attr_font = createFont("Helvetica-light.ttf", height*0.04);
+  
   count = 0;
   sticks_gap = width/40;
   score_text = loadStrings("High_score.txt");
-  println(score_text[0]);
+  
   high_score = int(score_text[0]);
   pause.append(width/2 - sticks_gap*0.5);
   pause.append(height/20);
@@ -191,7 +216,8 @@ void setup() {
   step1 = loadImage("Step1.png");
   step2 = loadImage("Step2.png");
   jump = loadImage("Jump.png");
-  vib_char = loadImage("Vib_char.png");
+  check = loadImage("check.png");  
+  
   
   
   dataFile = getSdWritableFilePathOrNull("High_score.txt");
@@ -215,9 +241,49 @@ void setup() {
   
 }
 
+
+void set_parameters(int i) {
+  
+  
+  
+  
+    player.get(i).char_height = (height*0.3*attributes[i][1])/183;
+    
+    player.get(i).x = width/20;
+    player.get(i).y = height - ground_height - player.get(i).char_height;
+    player.get(i).initY = height - ground_height - player.get(i).char_height;
+    player.get(i).char_width = width/10;
+    player.get(i).face_height = player.get(i).char_height * 0.4;
+    player.get(i).face_x = player.get(i).x*1.1;
+    player.get(i).face_y = player.get(i).y-player.get(i).char_height*0.25;
+    
+  
+  
+}
+
+
+void load_images() {
+  
+  for(int i = 0; i < players; i++) {
+      photos[i] = loadImage(names[i] + png);
+      photos[i].resize(0, int(player.get(i).face_height));
+      small[i] = loadImage(names[i] + png);
+      small[i].resize(0, int(height*0.18));
+      big[i] = loadImage(names[i] + png);
+      big[i].resize(int(width*0.25*0.6), 0); 
+  }
+  
+}
+
 void draw() {
   
-  background(255);
+  if(screen == 3) {
+    
+    background(240,240,240);
+    
+  } else {
+    background(255); 
+  }
   
   show_screen(screen);
   
@@ -231,7 +297,11 @@ void show_screen(int x) {
        main_menu();
        break;
      case 2:
+       select_char();
+       break;
+     case 3:
        start_game();
+       
        break;
   }
   
@@ -255,6 +325,104 @@ void main_menu() {
   
 }
 
+void select_char() {
+  
+  make_grid();
+  show_details(selected);
+  put_title();
+  
+}
+
+
+
+void put_title() {
+  
+  textAlign(CENTER,CENTER);
+  fill(0);
+  stroke(0);
+  textFont(title_font);
+  text("Select your character", width*0.375, height*0.1);
+  textAlign(LEFT);
+  line(0, height*0.2, width*0.75, height*0.2);
+  line(width*0.75, 0, width*0.75, height);
+  
+}
+
+void make_grid() {
+  
+  
+  float indent = width*0.125;
+  float top_gap = height*0.3;
+  float pic_padding = height*0.01;
+  float pic_height = height*0.15;
+  float rect_h = height*0.2;
+
+  
+  fill(255);
+  stroke(0);
+  for(int j = 0; j < 12; j++) {
+    if(j != selected) {
+    
+     rect(indent + (j % 4)* indent, top_gap + int(j / 4) * rect_h, indent, rect_h);
+     
+    }
+  }
+  
+  stroke(0,252,14);
+  rect(indent + (selected % 4)* indent, top_gap + int(selected / 4) * rect_h, indent, rect_h);
+  stroke(0);
+  
+  //circle(indent + width*0.028, top_gap + int(pic_height)*0.5, pic_height + pic_padding);
+  imageMode(CENTER);
+  for(int i = 0; i < players; i++) {
+    image(small[i], indent*(i+1) + indent/2, top_gap + rect_h/2);
+  }
+  imageMode(CORNER);
+  //pic.resize(0, int(pic_height));
+  
+  
+}
+
+void show_details(int x) {
+  
+  float pic_x = width*0.75 + width*0.25*0.2;
+  float pic_y = height*0.06;
+  float txt_y = height*0.53;
+  float txt_x = width*0.75 + width*0.0625;
+  float rect_h = height*0.07;
+  
+  image(big[x], pic_x, pic_y);
+  //big[x].resize(int(width*0.25*0.6), 0); 
+  
+  
+  for(int i = 0; i < 4; i++) {
+     stroke(255);
+     fill(0);
+     rect(width*0.75, txt_y + rect_h * i, width*0.125, rect_h);
+     stroke(0);
+     fill(255);
+     rect(width*0.875, txt_y + rect_h * i, width*0.125, rect_h);
+  }
+  stroke(0);
+  fill(255);
+  textFont(attr_font);
+  textAlign(CENTER, CENTER);
+  text("Name", txt_x, txt_y + rect_h*0.5);
+  text("Mass", txt_x, txt_y + rect_h*1.5);
+  text("Height", txt_x, txt_y + rect_h*2.5);
+  text("Reaction", txt_x, txt_y + rect_h*3.5);
+  fill(0);
+  text(names[x], txt_x + width*0.125, txt_y + rect_h*0.5);
+  text(str(attributes[x][0]) + " kgs", txt_x + width*0.125, txt_y + rect_h*1.5);
+  text(str(attributes[x][1]) + " cms", txt_x + width*0.125, txt_y + rect_h*2.5);
+  text(str(attributes[x][0]) + " ms", txt_x + width*0.125, txt_y + rect_h*3.5);
+  textAlign(LEFT);
+  imageMode(CENTER);
+  image(check, width*0.875, height*0.9);
+  check.resize(0, int(height*0.1));
+  imageMode(CORNER);
+}
+
 void start_game() {
   
   if(!dead && !paused) {
@@ -263,7 +431,7 @@ void start_game() {
     adjust_obstacles();
     
     if(jumped == true) {
-      player.jump(); 
+      player.get(selected).jump(); 
     }
     
   }
@@ -276,7 +444,7 @@ void start_game() {
   
   move_obstacles();
   
-  player.create();
+  player.get(selected).create();
   
   
   
@@ -292,7 +460,7 @@ void obstaclesInit() {
   o_speed = 20;
   obstacle_index = 0;
   obstacle_gap = random(width*0.6, width*1.5);
-  obstacles.add(new Obstacle(random(100,200), random(100,150)));
+  obstacles.add(new Obstacle(random(min_oheight,200), random(100,150)));
   obstacles.get(0).x = width;
   obstacles.get(0).y = height - ground_height - obstacles.get(0).o_height;
   
@@ -323,12 +491,12 @@ void move_obstacles() {
     if(i == obstacle_index) {
        float w;
        if(jumped) {
-         w = player.char_height;
+         w = player.get(selected).char_height;
        } else {
-         w = player.char_height*0.375; 
+         w = player.get(selected).char_height*0.375; 
        }
-       if(obstacles.get(i).x <= player.x + w && obstacles.get(i).x + obstacles.get(i).o_width >= player.x) {
-         player.checkCollision();
+       if(obstacles.get(i).x <= player.get(selected).x + w && obstacles.get(i).x + obstacles.get(i).o_width >= player.get(selected).x) {
+         player.get(selected).checkCollision();
        } 
     }
     
@@ -360,7 +528,7 @@ void adjust_obstacles() {
   
   
     if(width - obstacles.get(obstacles.size()-1).x > obstacle_gap) {
-      obstacles.add(new Obstacle(random(100,200), random(100,200)));
+      obstacles.add(new Obstacle(random(min_oheight,200), random(100,200)));
       obstacles.get(obstacles.size()-1).x = width;
       obstacles.get(obstacles.size()-1).y = height - ground_height - obstacles.get(obstacles.size()-1).o_height;
       obstacle_gap = random(width*0.6, width*1.5);
@@ -462,8 +630,49 @@ void mousePressed() {
      }
      
       break;
-    
+      
     case 2:
+    
+    // check button
+    
+     if(mouseX >= width*0.875 - 0.55*int(height*0.1) && mouseX <= width*0.875 + 0.55*int(height*0.1) && mouseY >= height*0.9 - 0.5*int(height*0.1) && mouseY <= height*0.9 + 0.5*int(height*0.1)) {
+        
+       
+        jumped = false;
+        set_parameters(selected);
+        player.get(selected).thrust = attributes[selected][3];
+        
+        screen = 3;
+        
+     } else {
+        
+        float indent = width*0.125;
+        float top_gap = height*0.3;
+        float rect_h = height*0.2;
+        float box_x;
+        float box_y;
+
+        for(int j = 0; j < players; j++) {
+          box_x = indent + (j % 4)* indent;
+          box_y = top_gap + int(j / 4);
+          
+          if(mouseX >= box_x && mouseX < box_x + indent && mouseY >= box_y && mouseY < box_y + rect_h) {
+             
+            selected = j;
+            
+            break;
+           
+          }
+        }
+       
+       
+     }
+     
+     
+      
+      break;
+    
+    case 3:
     
       
       // pause button
@@ -477,13 +686,13 @@ void mousePressed() {
         
         if(!dead) {
           
-          if(player.y >= player.initY) {
+          if(player.get(selected).y >= player.get(selected).initY) {
             
             jumped = true;
             
-            player.face_x = player.x + player.char_height*0.45;
-            player.char_height *= 0.6;
-            sound.play();
+            player.get(selected).face_x = player.get(selected).x + player.get(selected).char_height*0.45;
+            player.get(selected).char_height *= 0.6;
+            jump_sound.play();
           }
         
             
