@@ -56,8 +56,8 @@ int high_score;
 
 // names of characters
 String[] names = {"Vibhu", "Khushi"};
-// qualities of characters
-float[][] attributes = {{66, 183, 0.5, 35}, {56, 167, 1, 30}};
+// qualities of characters (height, jump, stamina)
+float[][] attributes = {{183, 35, 20}, {167, 30, 10}};
 
 
 class Person {
@@ -73,10 +73,10 @@ class Person {
     
     
     name = names[index];
-    mass = attributes[index][0];
-    person_height = attributes[index][1];
-    reaction_time = attributes[index][2];
-    thrust = attributes[index][3];
+    //mass = attributes[index][0];
+    person_height = attributes[index][0];
+    //reaction_time = attributes[index][2];
+    thrust = attributes[index][1];
     
      
   }
@@ -125,7 +125,7 @@ class Person {
     if(thrust < 0) {
       if(y >= initY) {
         jumped = false;
-        thrust = attributes[selected][3];
+        thrust = attributes[selected][1];
         gravity = 2;
         char_height /= 0.6;
         face_x = x*1.1;
@@ -247,7 +247,7 @@ void set_parameters(int i) {
   
   
   
-    player.get(i).char_height = (height*0.3*attributes[i][1])/183;
+    player.get(i).char_height = (height*0.3*attributes[i][0])/183;
     
     player.get(i).x = width/20;
     player.get(i).y = height - ground_height - player.get(i).char_height;
@@ -408,14 +408,14 @@ void show_details(int x) {
   textFont(attr_font);
   textAlign(CENTER, CENTER);
   text("Name", txt_x, txt_y + rect_h*0.5);
-  text("Mass", txt_x, txt_y + rect_h*1.5);
-  text("Height", txt_x, txt_y + rect_h*2.5);
-  text("Reaction", txt_x, txt_y + rect_h*3.5);
+  text("Height", txt_x, txt_y + rect_h*1.5);
+  text("Jump", txt_x, txt_y + rect_h*2.5);
+  text("Stamina", txt_x, txt_y + rect_h*3.5);
   fill(0);
   text(names[x], txt_x + width*0.125, txt_y + rect_h*0.5);
-  text(str(attributes[x][0]) + " kgs", txt_x + width*0.125, txt_y + rect_h*1.5);
-  text(str(attributes[x][1]) + " cms", txt_x + width*0.125, txt_y + rect_h*2.5);
-  text(str(attributes[x][0]) + " ms", txt_x + width*0.125, txt_y + rect_h*3.5);
+  text(str(attributes[x][0]) + " cms", txt_x + width*0.125, txt_y + rect_h*1.5);
+  text(str(attributes[x][1] * 3) + " cms", txt_x + width*0.125, txt_y + rect_h*2.5);
+  text(str(attributes[x][2]) + " s", txt_x + width*0.125, txt_y + rect_h*3.5);
   textAlign(LEFT);
   imageMode(CENTER);
   image(check, width*0.875, height*0.9);
@@ -516,7 +516,7 @@ void adjust_score() {
         }
         
      }
-     if((score + 1) % 20 == 0) {
+     if((score + 1) % int(attributes[selected][2]) == 0) {
        
        o_speed += 5; 
       
@@ -640,7 +640,7 @@ void mousePressed() {
        
         jumped = false;
         set_parameters(selected);
-        player.get(selected).thrust = attributes[selected][3];
+        player.get(selected).thrust = attributes[selected][1];
         
         screen = 3;
         
