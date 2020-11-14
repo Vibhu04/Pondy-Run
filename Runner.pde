@@ -20,6 +20,8 @@ PFont attr_font;
 // images of the two steps
 PImage step1;
 PImage step2;
+// image of the autorickshaw
+PImage auto;
 // image of the jump position
 PImage jump;
 // check button image
@@ -159,8 +161,10 @@ class Obstacle {
   }
   
   void create() {
-     fill(200);
-     rect(x,y,o_width,o_height);
+     //fill(200);
+     //rect(x,y,o_width,o_height);
+     image(auto, x, y);
+     
   }
   
   void move() {
@@ -215,6 +219,8 @@ void setup() {
   
   step1 = loadImage("Step1.png");
   step2 = loadImage("Step2.png");
+  auto = loadImage("Auto.png");
+  auto.resize(0, int(player.get(0).char_height*1.5));
   jump = loadImage("Jump.png");
   check = loadImage("check.png");  
   
@@ -462,7 +468,9 @@ void obstaclesInit() {
   obstacle_gap = random(width*0.6, width*1.5);
   obstacles.add(new Obstacle(random(min_oheight,200), random(100,150)));
   obstacles.get(0).x = width;
-  obstacles.get(0).y = height - ground_height - obstacles.get(0).o_height;
+  //obstacles.get(0).y = height - ground_height - obstacles.get(0).o_height;
+  obstacles.get(0).y = height - ground_height - player.get(0).char_height*1.5;
+  
   
 }
 
@@ -530,7 +538,8 @@ void adjust_obstacles() {
     if(width - obstacles.get(obstacles.size()-1).x > obstacle_gap) {
       obstacles.add(new Obstacle(random(min_oheight,200), random(100,200)));
       obstacles.get(obstacles.size()-1).x = width;
-      obstacles.get(obstacles.size()-1).y = height - ground_height - obstacles.get(obstacles.size()-1).o_height;
+      //obstacles.get(obstacles.size()-1).y = height - ground_height - obstacles.get(obstacles.size()-1).o_height;
+      obstacles.get(obstacles.size()-1).y = height - ground_height - player.get(0).char_height*1.5;
       obstacle_gap = random(width*0.6, width*1.5);
       
       if(obstacles.get(0).x + obstacles.get(0).o_width < 0) {
