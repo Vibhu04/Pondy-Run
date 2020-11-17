@@ -22,6 +22,8 @@ PImage step1;
 PImage step2;
 // image of the autorickshaw
 PImage auto;
+// moving background
+PImage bg;
 // image of the jump position
 PImage jump;
 // check button image
@@ -44,6 +46,10 @@ boolean dead = false;
 boolean paused = false;
 // begin at the first screen
 int screen = 1;
+// for shifting the bg
+int x = 0;
+
+
 
 
 String[] score_text = new String[1];
@@ -59,7 +65,11 @@ int high_score;
 // names of characters
 String[] names = {"Vibhu", "Khushi"};
 // qualities of characters (height, jump, stamina)
-float[][] attributes = {{183, 35, 20}, {167, 30, 10}};
+float[][] attributes = {{183, 45, 20}, {167, 30, 10}};
+
+// auto rickshaw height
+int auto_height;
+int auto_width;
 
 
 class Person {
@@ -113,8 +123,6 @@ class Person {
     }
      
     image(photos[selected], face_x, face_y);
-    
-    
     
   }
   
@@ -184,9 +192,11 @@ ArrayList<Person> player = new ArrayList<Person>();
 void setup() {
   
   orientation(LANDSCAPE);
-  frameRate(100);
+  frameRate(150);
   size(displayWidth, displayHeight);
   ground_height = height/10;
+  auto_height = round(height*0.35);
+  auto_width = round(auto_height * 1.56); // ratio is: 1:1.56
   
   for(int i = 0; i < players; i++) {
      player.add(new Person(i));
@@ -220,7 +230,8 @@ void setup() {
   step1 = loadImage("Step1.png");
   step2 = loadImage("Step2.png");
   auto = loadImage("Auto.png");
-  auto.resize(0, int(player.get(0).char_height*1.5));
+  bg = loadImage("Background.png");
+  auto.resize(0, auto_height);
   jump = loadImage("Jump.png");
   check = loadImage("check.png");  
   
@@ -241,17 +252,10 @@ void setup() {
       
   }
   
-  
-  
- 
-  
 }
 
 
 void set_parameters(int i) {
-  
-  
-  
   
     player.get(i).char_height = (height*0.3*attributes[i][0])/183;
     
@@ -285,7 +289,23 @@ void draw() {
   
   if(screen == 3) {
     
-    background(240,240,240);
+    background(204,238,238);
+    tint(255, 200);
+    image(bg, 0 - x, 50);
+    image(bg, bg.width - x, 50);
+    tint(255,255);
+    x += 10;
+    
+    if(2*bg.width - x < width) {
+      
+      x -= bg.width;
+      
+    }
+    
+   
+    
+    
+    
     
   } else {
     background(255); 
@@ -463,13 +483,13 @@ void start_game() {
 }
 
 void obstaclesInit() {
-  o_speed = 20;
+  o_speed = 30;
   obstacle_index = 0;
   obstacle_gap = random(width*0.6, width*1.5);
-  obstacles.add(new Obstacle(random(min_oheight,200), random(100,150)));
+  obstacles.add(new Obstacle(auto_height, auto_width));
   obstacles.get(0).x = width;
   //obstacles.get(0).y = height - ground_height - obstacles.get(0).o_height;
-  obstacles.get(0).y = height - ground_height - player.get(0).char_height*1.5;
+  obstacles.get(0).y = height - ground_height - auto_height;
   
   
 }
@@ -484,8 +504,10 @@ void show_score() {
 }
 
 void draw_ground() {
-  fill(100);
+  fill(105);
+  noStroke();
   rect(0, height - ground_height, width, ground_height);
+  strokeWeight(2);
 }
 
 void move_obstacles() {
@@ -536,10 +558,10 @@ void adjust_obstacles() {
   
   
     if(width - obstacles.get(obstacles.size()-1).x > obstacle_gap) {
-      obstacles.add(new Obstacle(random(min_oheight,200), random(100,200)));
+      obstacles.add(new Obstacle(auto_height, auto_width));
       obstacles.get(obstacles.size()-1).x = width;
       //obstacles.get(obstacles.size()-1).y = height - ground_height - obstacles.get(obstacles.size()-1).o_height;
-      obstacles.get(obstacles.size()-1).y = height - ground_height - player.get(0).char_height*1.5;
+      obstacles.get(obstacles.size()-1).y = height - ground_height - auto_height;
       obstacle_gap = random(width*0.6, width*1.5);
       
       if(obstacles.get(0).x + obstacles.get(0).o_width < 0) {
