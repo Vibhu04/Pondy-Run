@@ -28,12 +28,16 @@ PImage bg;
 PImage jump;
 // check button image
 PImage check;
+// crow flaps
+PImage crow1, crow2;
 // images for the characters while running
 PImage[] photos = new PImage[players];
 // images on display for choosing character
 PImage[] small = new PImage[players];
 // images to be shown when showing the details of character
 PImage[] big = new PImage[players];
+// images of obstacles
+PImage[] obstacle_imgs = new PImage[2];
 // counts every iteration
 int count;
 // obstacle speed
@@ -48,6 +52,10 @@ boolean paused = false;
 int screen = 1;
 // for shifting the bg
 int x = 0;
+// 1 - auto, 2 - crow
+int o_choice;
+// difference of height between auto and crow
+int crow_auto_dif;
 
 
 
@@ -67,9 +75,11 @@ String[] names = {"Vibhu", "Khushi"};
 // qualities of characters (height, jump, stamina)
 float[][] attributes = {{183, 45, 20}, {167, 40, 10}};
 
-// auto rickshaw height
+// auto rickshaw height and width
 int auto_height;
 int auto_width;
+// crow height and width
+int crow_height, crow_width;
 
 
 class Person {
@@ -146,8 +156,9 @@ class Person {
   }
   
   void checkCollision() {
-    if(y + char_height >= obstacles.get(obstacle_index).y) {
-       
+    if(y + char_height >= obstacles.get(obstacle_index).y && y <= obstacles.get(obstacle_index).y + obstacles.get(obstacle_index).o_height) {
+       //println("y: ", y);
+       //println("o.y + o_height:", obstacles.get(obstacle_index).y + obstacles.get(obstacle_index).o_height);
        fill(70);
        rect(displayWidth/2, displayHeight/2, 40, 40); 
        dead = true;
@@ -160,18 +171,48 @@ class Person {
 
 class Obstacle {
   float x,y,o_height,o_width;
+  int type;
+  int crow_count = 1;
+  int stroke = 1;
   
-  Obstacle(float _o_height, float _o_width) {
+  Obstacle(float _o_height, float _o_width, int i) {
    
    
    o_height = _o_height;
    o_width = _o_width;
+   type = i;
+   
   }
   
   void create() {
      //fill(200);
      //rect(x,y,o_width,o_height);
-     image(auto, x, y);
+     if(type == 1) {
+       image(auto, x, y);
+     } else {
+        if(crow_count % 15 == 0) { // toggle stroke images
+          if(stroke == 1) {
+            stroke = 2;
+          } else {
+            stroke = 1;
+          }
+          
+        }
+        
+        if(stroke == 1) {
+          image(crow1, x, y);
+          
+        } else {
+          image(crow2, x, y); 
+        }
+        
+        if(!dead && !paused) {
+          crow_count++;
+        }
+        
+    }
+   
+     
      
   }
   
@@ -197,6 +238,10 @@ void setup() {
   ground_height = height/10;
   auto_height = round(height*0.35);
   auto_width = round(auto_height * 1.56); // ratio is: 1:1.56
+  
+  crow_width = round(auto_width * 0.4);
+  crow_height = round(crow_width / 1.6);
+  
   
   for(int i = 0; i < players; i++) {
      player.add(new Person(i));
@@ -230,9 +275,14 @@ void setup() {
   step1 = loadImage("Step1.png");
   step2 = loadImage("Step2.png");
   auto = loadImage("Auto.png");
+  crow1 = loadImage("Stroke1.png");
+  crow2 = loadImage("Stroke2.png");
   bg = loadImage("Background.png");
   bg.resize(0, 1125);
   auto.resize(0, auto_height);
+  crow1.resize(crow_width, 0);
+  crow2.resize(crow_width, 0);
+  
   jump = loadImage("Jump.png");
   check = loadImage("check.png");  
   
@@ -291,8 +341,6 @@ void draw() {
   if(screen == 3) {
     
     background(204,238,238);
-    
-    
     
   } else {
     background(255); 
@@ -450,8 +498,6 @@ void start_game() {
     
   }
   
-  
-  
   draw_ground();
   
   movebg();
@@ -475,10 +521,11 @@ void start_game() {
 }
 
 void obstaclesInit() {
+  
   o_speed = 30;
   obstacle_index = 0;
   obstacle_gap = random(width*0.75, width*1.5);
-  obstacles.add(new Obstacle(auto_height, auto_width));
+  obstacles.add(new Obstacle(auto_height, auto_width, 1));
   obstacles.get(0).x = width;
   //obstacles.get(0).y = height - ground_height - obstacles.get(0).o_height;
   obstacles.get(0).y = height - ground_height - auto_height;
@@ -548,12 +595,25 @@ void adjust_score() {
 
 void adjust_obstacles() {
   
-  
+    
     if(width - obstacles.get(obstacles.size()-1).x > obstacle_gap) {
-      obstacles.add(new Obstacle(auto_height, auto_width));
+      o_choice = int(random(1,3));
+      if(o_choice == 1) {
+        obstacles.add(new Obstacle(auto_height, auto_width, o_choice));
+        obstacles.get(obstacles.size()-1).y = height - ground_height - auto_height;
+      } else {
+        obstacles.add(new Obstacle(crow_height, crow_width, o_choice));
+        o_choice = int(random(1,3));
+        if(o_choice == 1) {
+          crow_auto_dif = -200;
+        } else {
+          crow_auto_dif = 100;
+        }
+          
+        obstacles.get(obstacles.size()-1).y = height - ground_height - auto_height + crow_auto_dif;
+      }
       obstacles.get(obstacles.size()-1).x = width;
-      //obstacles.get(obstacles.size()-1).y = height - ground_height - obstacles.get(obstacles.size()-1).o_height;
-      obstacles.get(obstacles.size()-1).y = height - ground_height - auto_height;
+      
       obstacle_gap = random(width*0.75, width*1.5);
       
       if(obstacles.get(0).x + obstacles.get(0).o_width < 0) {
@@ -745,8 +805,6 @@ void mousePressed() {
            
         }
         
-         
-        
       } else {
         
         // resume button
@@ -764,9 +822,6 @@ void mousePressed() {
         } 
         
       }
-    
-      
-
       
       break;
       
