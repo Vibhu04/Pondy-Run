@@ -17,6 +17,11 @@ PFont score_font;
 PFont pause_font;
 PFont title_font;
 PFont attr_font;
+// images of the different parts
+PImage limbs1, limbs2;
+PImage shorts;
+PImage tshirt;
+PImage jLimbs, jTshirt, jShorts;
 // images of the two steps
 PImage step1;
 PImage step2;
@@ -107,13 +112,24 @@ class Person {
     
     if(jumped == false) {
       imgCount++;
+      //image(tshirt, x, y);
+      //image(shorts, x, y);
+      tint(207,27,27);
+      image(tshirt, x, y);
+      noTint();
+      
+      
       if(step == 1) {
-        image(step1, x, y);
-        step1.resize(0, int(char_height));
+        image(limbs1, x, y);
+        //image(step1, x, y);
+        //step1.resize(0, int(char_height));
       } else {
-        image(step2, x, y);
-        step2.resize(0, int(char_height));
+        image(limbs2, x, y);
+        //image(step2, x, y);
+        //step2.resize(0, int(char_height));
       }
+      
+      image(shorts, x, y);
       
       if(imgCount % 10 == 0) {
          if(step == 1) {
@@ -124,8 +140,14 @@ class Person {
       }
       
     } else {
-      image(jump, x, y);
-      jump.resize(0, int(char_height));
+      //image(jump, x, y);
+      image(jLimbs, x, y);
+      tint(207,27,27);
+      image(jTshirt, x, y);
+      noTint();
+      image(jShorts, x, y);
+      
+      //jump.resize(0, int(char_height));
     }
     
     if(jumped) {
@@ -242,6 +264,18 @@ void setup() {
   crow_width = round(auto_width * 0.4);
   crow_height = round(crow_width / 1.6);
   
+  step1 = loadImage("Step1.png");
+  step2 = loadImage("Step2.png");
+  jump = loadImage("Jump.png");
+  
+  limbs1 = loadImage("Limbs1.png");
+  limbs2 = loadImage("Limbs2.png");
+  shorts = loadImage("Shorts.png");
+  tshirt = loadImage("T-shirt.png");
+  jLimbs = loadImage("JLimbs.png");
+  jTshirt = loadImage("JTshirt.png");
+  jShorts = loadImage("JShorts.png");
+  
   
   for(int i = 0; i < players; i++) {
      player.add(new Person(i));
@@ -272,8 +306,6 @@ void setup() {
   pause.append(sticks_gap);
   pause.append(height/15);
   
-  step1 = loadImage("Step1.png");
-  step2 = loadImage("Step2.png");
   auto = loadImage("Auto.png");
   crow1 = loadImage("Stroke1.png");
   crow2 = loadImage("Stroke2.png");
@@ -283,7 +315,7 @@ void setup() {
   crow1.resize(crow_width, 0);
   crow2.resize(crow_width, 0);
   
-  jump = loadImage("Jump.png");
+  
   check = loadImage("check.png");  
   
   
@@ -318,8 +350,18 @@ void set_parameters(int i) {
     player.get(i).face_x = player.get(i).x*1.1;
     player.get(i).face_y = player.get(i).y-player.get(i).char_height*0.25;
     
-  
-  
+    step1.resize(0, int(player.get(i).char_height));
+    step2.resize(0, int(player.get(i).char_height));
+    
+    limbs1.resize(0, int(player.get(i).char_height));
+    limbs2.resize(0, int(player.get(i).char_height));
+    shorts.resize(0, int(player.get(i).char_height));
+    tshirt.resize(0, int(player.get(i).char_height));
+    
+    jLimbs.resize(0, int(player.get(i).char_height*0.6));
+    jShorts.resize(0, int(player.get(i).char_height*0.6));
+    jTshirt.resize(0, int(player.get(i).char_height*0.6));
+    
 }
 
 
@@ -338,7 +380,7 @@ void load_images() {
 
 void draw() {
   
-  if(screen == 3) {
+  if(screen == 4) {
     
     background(204,238,238);
     
@@ -361,8 +403,10 @@ void show_screen(int x) {
        select_char();
        break;
      case 3:
+       select_dress();
+       break;
+     case 4:
        start_game();
-       
        break;
   }
   
@@ -390,19 +434,19 @@ void select_char() {
   
   make_grid();
   show_details(selected);
-  put_title();
+  put_title("Select your character");
   
 }
 
 
 
-void put_title() {
+void put_title(String title) {
   
   textAlign(CENTER,CENTER);
   fill(0);
   stroke(0);
   textFont(title_font);
-  text("Select your character", width*0.375, height*0.1);
+  text(title, width*0.375, height*0.1);
   textAlign(LEFT);
   line(0, height*0.2, width*0.75, height*0.2);
   line(width*0.75, 0, width*0.75, height);
@@ -482,6 +526,25 @@ void show_details(int x) {
   image(check, width*0.875, height*0.9);
   check.resize(0, int(height*0.1));
   imageMode(CORNER);
+}
+
+
+void select_dress() {
+  
+   
+   put_title("Select the clothes");
+  // put_char();
+
+}
+
+
+void put_char() {
+  
+   float face_x = width*0.75 + width*0.25*0.2;
+   float face_y = height*0.06;
+   float body_x = face_x/1.1;
+   //float body_y = player.get(y-player.get(i).char_height*0.25; 
+   
 }
 
 void start_game() {
@@ -772,8 +835,13 @@ void mousePressed() {
      
       
       break;
-    
+      
     case 3:
+    
+      screen = 4;
+      break;
+    
+    case 4:
     
       
       // pause button
