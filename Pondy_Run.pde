@@ -17,6 +17,8 @@ PFont score_font;
 PFont pause_font;
 PFont title_font;
 PFont attr_font;
+PFont clothes_font;
+PFont clothes_font_s;
 // images of the different parts
 PImage limbs1, limbs2;
 PImage shorts;
@@ -41,10 +43,14 @@ PImage[] photos = new PImage[players];
 PImage[] small = new PImage[players];
 // images to be shown when showing the details of character
 PImage[] big = new PImage[players];
+// images to be shown while selecting clothes
+PImage[] profile = new PImage[players];
 // images of obstacles
 PImage[] obstacle_imgs = new PImage[2];
 // counts every iteration
 int count;
+// number of colors available
+int colors_num = 6;
 // obstacle speed
 int o_speed = 20;
 // gap between the sticks of pause button
@@ -53,6 +59,7 @@ float sticks_gap;
 FloatList pause = new FloatList();
 boolean dead = false;
 boolean paused = false;
+boolean tshirt_button = true;
 // begin at the first screen
 int screen = 1;
 // for shifting the bg
@@ -60,10 +67,12 @@ int x = 0;
 // 1 - auto, 2 - crow
 int o_choice;
 // difference of height between auto and crow
-int crow_auto_dif;
+float crow_auto_dif;
 
 
+int[][] colors = {{207,27,27},{70,112,212},{78,196,65},{237,234,31},{55,237,231},{235,63,235}};
 
+int[][] colors_picked = {{207,27,27},{70,112,212}};
 
 String[] score_text = new String[1];
 String dataFile;
@@ -114,7 +123,7 @@ class Person {
       imgCount++;
       //image(tshirt, x, y);
       //image(shorts, x, y);
-      tint(207,27,27);
+      tint(colors_picked[0][0],colors_picked[0][1],colors_picked[0][2]);
       image(tshirt, x, y);
       noTint();
       
@@ -129,7 +138,9 @@ class Person {
         //step2.resize(0, int(char_height));
       }
       
+      tint(colors_picked[1][0],colors_picked[1][1],colors_picked[1][2]);
       image(shorts, x, y);
+      noTint();
       
       if(imgCount % 10 == 0) {
          if(step == 1) {
@@ -142,10 +153,12 @@ class Person {
     } else {
       //image(jump, x, y);
       image(jLimbs, x, y);
-      tint(207,27,27);
+      tint(colors_picked[0][0],colors_picked[0][1],colors_picked[0][2]);
       image(jTshirt, x, y);
       noTint();
+      tint(colors_picked[1][0],colors_picked[1][1],colors_picked[1][2]);
       image(jShorts, x, y);
+      noTint();
       
       //jump.resize(0, int(char_height));
     }
@@ -295,6 +308,8 @@ void setup() {
   pause_font = createFont("Helvetica-light.ttf", height*0.06);
   title_font = createFont("Helvetica-light.ttf", height*0.08);
   attr_font = createFont("Helvetica-light.ttf", height*0.04);
+  clothes_font = createFont("Helvetica-light.ttf", height*0.05);
+  clothes_font_s = createFont("Helvetica.ttf", height*0.05);
   
   count = 0;
   sticks_gap = width/40;
@@ -350,20 +365,25 @@ void set_parameters(int i) {
     player.get(i).face_x = player.get(i).x*1.1;
     player.get(i).face_y = player.get(i).y-player.get(i).char_height*0.25;
     
-    step1.resize(0, int(player.get(i).char_height));
-    step2.resize(0, int(player.get(i).char_height));
-    
-    limbs1.resize(0, int(player.get(i).char_height));
-    limbs2.resize(0, int(player.get(i).char_height));
-    shorts.resize(0, int(player.get(i).char_height));
-    tshirt.resize(0, int(player.get(i).char_height));
-    
-    jLimbs.resize(0, int(player.get(i).char_height*0.6));
-    jShorts.resize(0, int(player.get(i).char_height*0.6));
-    jTshirt.resize(0, int(player.get(i).char_height*0.6));
     
 }
 
+void resize_images(int i) {
+  
+  step1.resize(0, int(player.get(i).char_height));
+  step2.resize(0, int(player.get(i).char_height));
+  
+  limbs1.resize(0, int(player.get(i).char_height));
+  limbs2.resize(0, int(player.get(i).char_height));
+  shorts.resize(0, int(player.get(i).char_height));
+  tshirt.resize(0, int(player.get(i).char_height));
+  
+  jLimbs.resize(0, int(player.get(i).char_height*0.6));
+  jShorts.resize(0, int(player.get(i).char_height*0.6));
+  jTshirt.resize(0, int(player.get(i).char_height*0.6));
+    
+  
+}
 
 void load_images() {
   
@@ -374,6 +394,9 @@ void load_images() {
       small[i].resize(0, int(height*0.18));
       big[i] = loadImage(names[i] + png);
       big[i].resize(int(width*0.25*0.6), 0); 
+      profile[i] = loadImage(names[i] + png);
+      profile[i].resize(0, int(height*attributes[i][0]*0.3/256.2)); 
+      
   }
   
 }
@@ -533,18 +556,80 @@ void select_dress() {
   
    
    put_title("Select the clothes");
-  // put_char();
+   put_categories();
+   put_colors();
+   put_char();
+   imageMode(CENTER);
+   image(check, width*0.875, height*0.9);
+   check.resize(0, int(height*0.1));
+   imageMode(CORNER); 
 
 }
 
 
 void put_char() {
   
-   float face_x = width*0.75 + width*0.25*0.2;
-   float face_y = height*0.06;
-   float body_x = face_x/1.1;
-   //float body_y = player.get(y-player.get(i).char_height*0.25; 
+   float face_x = width*0.75 + width*0.25*0.3;
+   float face_y = height*0.12;
+   float body_x = face_x/1.01;
+   float body_y = face_y + player.get(selected).char_height*0.4;
    
+   limbs1.resize(0, int(height*attributes[selected][0]*0.75/256.2));
+   
+   shorts.resize(0, int(height*attributes[selected][0]*0.75/256.2));
+   
+   tshirt.resize(0, int(height*attributes[selected][0]*0.75/256.2));
+   
+   tint(colors_picked[0][0],colors_picked[0][1],colors_picked[0][2]);
+   image(tshirt, body_x, body_y);
+   noTint();
+   image(limbs1, body_x, body_y);
+   tint(colors_picked[1][0],colors_picked[1][1],colors_picked[1][2]);
+   image(shorts, body_x, body_y);
+   noTint();
+   
+   image(profile[selected], face_x, face_y);
+   
+   
+}
+
+void put_categories() {
+  
+  
+  
+  textFont(clothes_font_s);
+  if(tshirt_button) {
+    text("T-shirt", width*0.25, height*0.3);
+  } else {
+    text("Shorts", width*0.4, height*0.3);
+  }
+  textFont(clothes_font);
+  if(tshirt_button) {
+    text("Shorts", width*0.4, height*0.3);
+  } else {
+    text("T-shirt", width*0.25, height*0.3);
+  }
+  
+    
+  
+  
+}
+
+void put_colors() {
+  
+   float circle_dia = width*0.06;
+   float circle_gap = width*0.1;
+   float indent = width*0.2;
+   
+   for(int i = 0; i < 6; i++) {
+     
+     fill(colors[i][0],colors[i][1],colors[i][2]);
+     circle(indent + (i%3)* (circle_gap + circle_dia), height*0.5 + int(i/3)*circle_gap, circle_dia);
+     
+   }
+     
+     
+  
 }
 
 void start_game() {
@@ -666,12 +751,14 @@ void adjust_obstacles() {
         obstacles.get(obstacles.size()-1).y = height - ground_height - auto_height;
       } else {
         obstacles.add(new Obstacle(crow_height, crow_width, o_choice));
-        o_choice = int(random(1,3));
-        if(o_choice == 1) {
-          crow_auto_dif = -200;
-        } else {
-          crow_auto_dif = 100;
-        }
+        //o_choice = int(random(1,3));
+        //if(o_choice == 1) {
+        //  crow_auto_dif = -200;
+        //} else {
+        //  crow_auto_dif = 100;
+        //}
+        
+        crow_auto_dif = random(-250, 120);
           
         obstacles.get(obstacles.size()-1).y = height - ground_height - auto_height + crow_auto_dif;
       }
@@ -801,11 +888,8 @@ void mousePressed() {
     
      if(mouseX >= width*0.875 - 0.55*int(height*0.1) && mouseX <= width*0.875 + 0.55*int(height*0.1) && mouseY >= height*0.9 - 0.5*int(height*0.1) && mouseY <= height*0.9 + 0.5*int(height*0.1)) {
         
-       
-        jumped = false;
         set_parameters(selected);
-        player.get(selected).thrust = attributes[selected][1];
-        x = 0;
+    
         screen = 3;
         
      } else {
@@ -838,7 +922,66 @@ void mousePressed() {
       
     case 3:
     
-      screen = 4;
+    // check button
+      if(mouseX >= width*0.875 - 0.55*int(height*0.1) && mouseX <= width*0.875 + 0.55*int(height*0.1) && mouseY >= height*0.9 - 0.5*int(height*0.1) && mouseY <= height*0.9 + 0.5*int(height*0.1)) {
+        jumped = false;
+        player.get(selected).thrust = attributes[selected][1];
+        x = 0;
+        resize_images(selected);
+        screen = 4;
+      } 
+      
+      // if at the same height as clothes cateogories
+      if(mouseY >= height*0.25 && mouseY <= height*0.35) {
+      
+        textSize(height*0.05);
+        String t = "T-shirt";
+        String s = "Shorts";
+        float sw = textWidth(s);
+        float tw = textWidth(t);
+        
+        
+        // t-shirt button
+        if(mouseX >= width*0.25 && mouseX <= width*0.25 + tw)  {
+            tshirt_button = true;        
+        }
+        // shorts button
+        if(mouseX >= width*0.4 && mouseX <= width*0.4 + sw) {
+            tshirt_button = false; 
+        }
+        
+      } else {
+        
+        float circle_dia = width*0.06;
+        float circle_gap = width*0.1;
+        float indent = width*0.2;
+        float centreX, centreY;
+        int a;
+        
+        for(int i = 0; i < 6; i++) {
+            centreX = indent + (i%3)* (circle_gap + circle_dia);
+            centreY = height*0.5 + int(i/3)*circle_gap;
+            if(mouseX >= centreX - circle_dia/2 && mouseX <= centreX + circle_dia/2 && mouseY >= centreY - circle_dia/2 && mouseY <= centreY + circle_dia/2) {
+              if(tshirt_button) {
+                 a = 0;
+              } else {
+                 a = 1; 
+              }
+              colors_picked[a][0] = colors[i][0];
+              colors_picked[a][1] = colors[i][1];
+              colors_picked[a][2] = colors[i][2];
+              break;
+            }
+        }
+        
+        
+        
+        
+      }
+      
+      
+      
+      
       break;
     
     case 4:
